@@ -1,0 +1,150 @@
+---
+title: "progflow new"
+description: "Scaffold a new flow config interactively or create a minimal config in non-interactive mode."
+---
+
+## Synopsis
+
+```bash
+progflow new <name>
+```
+
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `name` | Yes | The name of the new flow |
+
+## What it does
+
+`progflow new` creates `~/.config/flow/<name>.json`. If a flow with that name already exists, the command exits with code `1` without modifying the existing file.
+
+Behavior differs depending on whether stdin is a terminal.
+
+## Interactive mode
+
+When run in a terminal, Progflow prompts you for each config field:
+
+```
+Creating new flow 'myproject'
+Working directory (optional, press Enter to skip):
+Editor command (optional, e.g. 'vim .'):
+URLs to open (comma-separated, optional):
+Shell (default: /bin/sh):
+Environment variables (KEY=VALUE, comma-separated, optional):
+```
+
+All prompts are optional — press Enter to skip any field and use its default.
+
+| Prompt | Default | Notes |
+|--------|---------|-------|
+| Working directory | none | Absolute or relative path |
+| Editor command | none | Example: `vim .`, `code .`, `nvim .` |
+| URLs to open | none | Comma-separated, e.g. `http://localhost:3000,https://docs.example.com` |
+| Shell | `/bin/sh` | Used for editor spawning |
+| Environment variables | none | Comma-separated `KEY=VALUE` pairs, e.g. `NODE_ENV=development,PORT=3000` |
+
+After answering all prompts, the config is written and Progflow confirms:
+
+```
+✓ flow 'myproject' created
+```
+
+## Non-interactive mode
+
+When stdin is not a terminal (scripted usage), Progflow creates a minimal config without prompting:
+
+```bash
+echo | progflow new myproject
+# or
+progflow new myproject < /dev/null
+```
+
+```
+✓ flow 'myproject' created (non-interactive mode)
+  Use 'progflow edit myproject' to configure
+```
+
+The minimal config looks like:
+
+```json
+{
+  "name": "myproject",
+  "directory": null,
+  "editorCmd": null,
+  "urlList": null,
+  "shell": "/bin/sh",
+  "env": {},
+  "note": ""
+}
+```
+
+<Tip>
+  After non-interactive creation, run `progflow edit myproject` to open the config file in your `$EDITOR` and fill in the details.
+</Tip>
+
+## Config file location
+
+Configs are stored as JSON files in `~/.config/flow/`:
+
+```
+~/.config/flow/
+└── myproject.json
+```
+
+## Example: full interactive session
+
+```bash
+progflow new myproject
+```
+
+```
+Creating new flow 'myproject'
+Working directory (optional, press Enter to skip): /home/user/projects/myproject
+Editor command (optional, e.g. 'vim .'): nvim .
+URLs to open (comma-separated, optional): http://localhost:3000,https://github.com/user/myproject
+Shell (default: /bin/sh):
+Environment variables (KEY=VALUE, comma-separated, optional): NODE_ENV=development,PORT=3000
+✓ flow 'myproject' created
+```
+
+The resulting config file:
+
+```json
+{
+  "name": "myproject",
+  "directory": "/home/user/projects/myproject",
+  "editorCmd": "nvim .",
+  "urlList": [
+    "http://localhost:3000",
+    "https://github.com/user/myproject"
+  ],
+  "shell": "/bin/sh",
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "3000"
+  },
+  "note": ""
+}
+```
+
+## Error cases
+
+| Condition | Exit code | Message |
+|-----------|-----------|---------|
+| Flow `<name>` already exists | `1` | `Flow '<name>' already exists` |
+| Config directory cannot be created | `2` | IO error |
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Flow created successfully |
+| `1` | User error — flow already exists |
+| `2` | IO or JSON write error |
+
+## See also
+
+- [`progflow edit`](/commands/edit) — edit an existing flow config
+- [`progflow on`](/commands/on) — activate a flow
+- [`progflow list`](/commands/list) — list all configured flows

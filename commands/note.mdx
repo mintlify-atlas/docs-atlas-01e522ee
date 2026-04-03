@@ -1,0 +1,80 @@
+---
+title: "progflow note"
+description: "Print the last context note saved when a flow was stopped."
+---
+
+## Synopsis
+
+```bash
+progflow note <name>
+```
+
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `name` | Yes | The name of the flow to read the note for |
+
+## What it does
+
+`progflow note` reads the `note` field from `~/.config/flow/<name>.json` and prints it to stdout.
+
+Notes are saved when you stop a flow with [`progflow off`](/commands/off) and answer `y` at the context note prompt. They capture where you left off so you can pick up quickly next time you activate the flow.
+
+## Output
+
+When a note has been saved:
+
+```bash
+progflow note myproject
+```
+
+```
+Refactoring auth middleware, tests pass but need cleanup
+```
+
+When no note has been saved yet:
+
+```bash
+progflow note myproject
+```
+
+```
+(no note saved)
+```
+
+## How notes are saved
+
+Notes are written by `progflow off` during the interactive shutdown prompt:
+
+```
+Save a context note? [y/N]: y
+Enter note: Refactoring auth middleware, tests pass but need cleanup
+✓ flow 'myproject' stopped
+```
+
+Each time you stop the flow and save a new note, it overwrites the previous one. Only the most recent note is stored.
+
+<Note>
+  The note prompt only appears when stdin is a terminal. In non-interactive mode (scripted or piped), `progflow off` skips the prompt and leaves the existing note unchanged.
+</Note>
+
+## Error cases
+
+| Condition | Exit code | Message |
+|-----------|-----------|---------|
+| Flow `<name>` does not exist | `1` | `Flow '<name>' does not exist` |
+| Config file cannot be read or parsed | `2` | IO or JSON error |
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (including the "no note saved" case) |
+| `1` | User error — flow not found |
+| `2` | IO or JSON parse error |
+
+## See also
+
+- [`progflow off`](/commands/off) — stop a flow and optionally save a note
+- [`progflow on`](/commands/on) — activate a flow

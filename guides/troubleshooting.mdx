@@ -1,0 +1,225 @@
+---
+title: "Troubleshooting"
+description: "Solutions to common errors and problems when installing or using Progflow."
+---
+
+<AccordionGroup>
+  <Accordion title="`progflow: command not found`">
+    **Why it happens:** The binary was installed to `~/.local/bin` but that directory is not in your shell's `PATH`.
+
+    **Fix:** Add `~/.local/bin` to your `PATH` for the current session:
+
+    ```bash
+    export PATH="$HOME/.local/bin:$PATH"
+    ```
+
+    To make this permanent, add the same line to your shell profile (`~/.bashrc`, `~/.zshrc`, or `~/.profile`):
+
+    ```bash
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+
+    You can verify the binary is present and the path is correct by running:
+
+    ```bash
+    ls ~/.local/bin/progflow
+    which progflow
+    ```
+  </Accordion>
+
+  <Accordion title="`No active flow found`">
+    **Error message:**
+
+    ```
+    No active flow found
+    ```
+
+    **Why it happens:** You ran `progflow off` without specifying a name, and Progflow couldn't find any active lockfile in `~/.config/flow/`. This means no flow was started in this session, or the lockfile was already removed.
+
+    **Fix:** Specify the flow name explicitly:
+
+    ```bash
+    progflow off <name>
+    ```
+
+    If you're not sure which flows are configured, list them:
+
+    ```bash
+    progflow list
+    ```
+  </Accordion>
+
+  <Accordion title="`No lock file found for flow 'name'`">
+    **Error message:**
+
+    ```
+    No lock file found for flow 'name'
+    ```
+
+    **Why it happens:** You tried to stop a flow that was never started in the current session. Progflow requires a lockfile (written by `progflow on`) to know which processes to terminate.
+
+    **Fix:** If you want to start and then stop the flow, run:
+
+    ```bash
+    progflow on <name>
+    progflow off <name>
+    ```
+
+    If you just want to clean up state without starting the flow, you can safely ignore this error — there is nothing running to stop.
+  </Accordion>
+
+  <Accordion title="`Directory does not exist: /path/to/dir`">
+    **Error message:**
+
+    ```
+    Directory does not exist: /path/to/dir
+    ```
+
+    **Why it happens:** The `directory` field in your flow's config points to a path that no longer exists. This typically happens when a project directory is moved, renamed, or deleted after the flow was created.
+
+    **Fix:** Update the flow config with the correct path using `progflow edit`:
+
+    ```bash
+    progflow edit <name>
+    ```
+
+    This opens `~/.config/flow/<name>.json` in your `$EDITOR`. Update the `"directory"` field to the correct path and save.
+
+    Alternatively, edit the file directly:
+
+    ```bash
+    nano ~/.config/flow/<name>.json
+    ```
+  </Accordion>
+
+  <Accordion title="`No editor set. Set $EDITOR or $VISUAL`">
+    **Error message:**
+
+    ```
+    No editor set. Set $EDITOR or $VISUAL
+    ```
+
+    **Why it happens:** You ran `progflow edit <name>` but neither the `$EDITOR` nor the `$VISUAL` environment variable is set. Progflow uses these standard variables to know which editor to open for editing config files.
+
+    **Fix:** Set `$EDITOR` for the current session:
+
+    ```bash
+    export EDITOR=nano
+    ```
+
+    To make this permanent, add it to your shell profile:
+
+    ```bash
+    echo 'export EDITOR=nano' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+
+    Then retry:
+
+    ```bash
+    progflow edit <name>
+    ```
+  </Accordion>
+
+  <Accordion title="URLs not opening on Linux">
+    **Why it happens:** Progflow uses `xdg-open` as its primary URL opener on Linux. If `xdg-utils` is not installed, the call fails silently and you may see:
+
+    ```
+    Warning: Failed to open URL: https://example.com
+    Hint: Install xdg-utils: sudo apt install xdg-utils
+    ```
+
+    **Fix:** Install `xdg-utils`:
+
+    ```bash
+    # Debian / Ubuntu
+    sudo apt install xdg-utils
+
+    # Fedora / RHEL
+    sudo dnf install xdg-utils
+
+    # Arch Linux
+    sudo pacman -S xdg-utils
+    ```
+
+    If `xdg-open` is installed but URLs still don't open, check that a default browser is configured:
+
+    ```bash
+    xdg-settings get default-web-browser
+    ```
+
+    Progflow also tries `gio open`, `firefox`, `chromium`, and `brave` as fallbacks if `xdg-open` fails.
+  </Accordion>
+
+  <Accordion title="Editor doesn't open when running `progflow on`">
+    **Why it happens:** The editor command stored in `editorCmd` failed to launch. Progflow prints a warning but continues:
+
+    ```
+    Warning: Failed to spawn editor 'code .': No such file or directory
+    ```
+
+    This usually means the editor binary is not in `PATH`, or the command is written incorrectly.
+
+    **Fix:** First, test the command manually in your terminal:
+
+    ```bash
+    code .
+    ```
+
+    If that fails, check that the editor is installed and that its binary is in your `PATH`. Then update the flow config:
+
+    ```bash
+    progflow edit <name>
+    ```
+
+    Set `"editorCmd"` to the exact command that works in your terminal, for example `"nvim ."`, `"code ."`, or `"nano ."`.
+  </Accordion>
+
+  <Accordion title="Build fails during installation">
+    **Why it happens:** The install script builds Progflow from source using `cargo`. If Rust is not installed or the version is too old (Progflow requires Rust 1.70+), the build will fail.
+
+    **Symptoms:**
+
+    ```
+    error: package `progflow` cannot be built because it requires rustc 1.70.0 or newer
+    ```
+
+    or:
+
+    ```
+    [ERROR] Build failed
+    ```
+
+    **Fix:** Check your Rust version:
+
+    ```bash
+    rustc --version
+    ```
+
+    If Rust is missing or outdated, install the latest stable version via rustup:
+
+    ```bash
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    source ~/.cargo/env
+    ```
+
+    On Termux:
+
+    ```bash
+    pkg install rust
+    ```
+
+    Then re-run the installer:
+
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/Rehanasharmin/Progflow/master/install.sh | bash
+    ```
+
+    You also need a C compiler (`gcc` or `clang`) and `make`. On Debian/Ubuntu:
+
+    ```bash
+    sudo apt install build-essential
+    ```
+  </Accordion>
+</AccordionGroup>

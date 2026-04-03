@@ -1,97 +1,75 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Progflow"
+description: "A context-aware workspace manager for Linux and Termux. Define named flows to launch your editor, open URLs, and save session context — all with one command."
 ---
 
-## Setting up
+## Welcome to Progflow
 
-Get your documentation site up and running in minutes.
+Progflow is a lightweight CLI tool that lets you define reusable workspace configurations called **flows**. Each flow captures everything you need to start working on a project: the working directory, editor command, URLs to open, environment variables, and shell. Activate a flow in one command. Stop it and save a note so you never forget where you left off.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install the single static binary on Linux or Termux
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Create and activate your first flow in under two minutes
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Command Reference" icon="terminal" href="/commands/on">
+    All six commands with flags, options, and real examples
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Flow Configuration" icon="gear" href="/configuration/flow-config">
+    Understand the JSON config format and every field
   </Card>
-</Columns>
+  <Card title="Use Cases" icon="lightbulb" href="/guides/use-cases">
+    Real-world examples for development, monitoring, and more
+  </Card>
+  <Card title="Termux Guide" icon="mobile" href="/guides/termux">
+    Run Progflow on Android with Termux
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Get up and running
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Install Progflow">
+    Run the one-line installer to build and install the binary:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/Rehanasharmin/Progflow/master/install.sh | bash
+    ```
+  </Step>
+  <Step title="Create your first flow">
+    Run `progflow new` and answer the prompts to configure your workspace:
 
-## Need inspiration?
+    ```bash
+    progflow new myproject
+    # Working directory: /home/you/projects/myapp
+    # Editor command: nvim .
+    # URLs to open: https://github.com/you/myapp
+    # Shell: /bin/bash
+    # Environment variables: NODE_ENV=development
+    ```
+  </Step>
+  <Step title="Activate the flow">
+    Start your workspace with a single command:
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+    ```bash
+    progflow on myproject
+    # ✓ flow 'myproject' started — editor, 1 url
+    ```
+  </Step>
+  <Step title="Stop and save context">
+    When you're done, stop the flow and optionally save a note:
+
+    ```bash
+    progflow off myproject
+    # Save a context note? [y/N]: y
+    # Enter note: Debugging auth issue in JWT middleware
+    # ✓ flow 'myproject' stopped
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Flows are plain JSON files stored in `~/.config/flow/`. You can edit them directly or use `progflow edit <name>` to open them in your `$EDITOR`.
+</Note>

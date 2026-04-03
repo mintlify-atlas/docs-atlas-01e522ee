@@ -1,0 +1,161 @@
+---
+title: "Flow config reference"
+description: "The JSON schema for a Progflow workspace configuration file."
+---
+
+Each flow is stored as a single JSON file at `~/.config/flow/<name>.json`. When you run `progflow on <name>`, Progflow reads this file to determine which directory to use, which editor to launch, which URLs to open, and which environment variables to set.
+
+## Config directory
+
+All flow configs and lockfiles live under `~/.config/flow/`. Progflow creates this directory automatically the first time you save a config.
+
+```
+~/.config/flow/
+├── backend.json       # flow config
+├── backend.lock       # active lockfile (present only while the flow is running)
+├── docs.json
+└── monitoring.json
+```
+
+<Note>
+  The `name` field inside the JSON is used as the identifier for the flow. When saving a config, Progflow derives the filename from `config.name`, so keep this field consistent with the filename you want. Loading a config reads the file by name and then deserializes the `name` field from JSON.
+</Note>
+
+## Creating and editing flows
+
+<Tabs>
+  <Tab title="Interactive (recommended)">
+    Use `progflow new` to scaffold a config file via prompts:
+
+    ```bash
+    progflow new backend
+    ```
+
+    Progflow walks you through each field and writes the JSON file for you.
+  </Tab>
+  <Tab title="Manual">
+    Create the file directly in `~/.config/flow/`:
+
+    ```bash
+    mkdir -p ~/.config/flow
+    nano ~/.config/flow/backend.json
+    ```
+
+    Paste a valid JSON object and save. See the [example below](#complete-example) for a starting point.
+  </Tab>
+  <Tab title="Edit existing">
+    Open an existing config in your `$EDITOR`:
+
+    ```bash
+    progflow edit backend
+    ```
+
+    This opens `~/.config/flow/backend.json` in whatever editor is set in your `$EDITOR` environment variable.
+  </Tab>
+</Tabs>
+
+## Complete example
+
+```json
+{
+  "name": "backend",
+  "directory": "/home/user/projects/api",
+  "editorCmd": "code .",
+  "urlList": ["http://localhost:3000", "http://localhost:5432/admin"],
+  "shell": "/bin/bash",
+  "env": {
+    "NODE_ENV": "development",
+    "DATABASE_URL": "postgres://localhost/mydb"
+  },
+  "note": "Was working on the auth middleware, JWT validation failing for refresh tokens"
+}
+```
+
+## Fields
+
+<ParamField path="name" type="string" required>
+  The name of the flow. Must match the JSON filename exactly (e.g., a file named `backend.json` must have `"name": "backend"`). Used to look up configs, lockfiles, and notes by name.
+</ParamField>
+
+<ParamField path="directory" type="string">
+  Absolute path to the working directory for this flow. Progflow changes to this directory before spawning the editor.
+
+  If omitted, defaults to `.` (the directory where `progflow on` is invoked).
+</ParamField>
+
+<ParamField path="editorCmd" type="string">
+  Shell command to launch your editor. Executed as `sh -c "<editorCmd>"` inside the configured `directory`.
+
+  ```json
+  "editorCmd": "nvim ."
+  ```
+
+  If omitted, no editor is launched — useful for flows that only open URLs.
+</ParamField>
+
+<ParamField path="urlList" type="string[]">
+  List of URLs to open when the flow activates. On Linux, Progflow tries `xdg-open` first, then falls back to `gio open`, `firefox`, `chromium`, and `brave`. On Termux, it uses `termux-open-url`, with an `am start` fallback.
+
+  ```json
+  "urlList": ["http://localhost:3000", "https://docs.example.com"]
+  ```
+
+  If omitted or empty, no URLs are opened.
+</ParamField>
+
+<ParamField path="shell" type="string" default="/bin/sh">
+  Path to the shell binary. Currently stored in the config and reserved for future use — Progflow does not use this field to launch the editor command today.
+</ParamField>
+
+<ParamField path="env" type="object">
+  Key-value pairs of environment variables to set when spawning the editor command. These variables are layered on top of the existing process environment — they do not replace it.
+
+  ```json
+  "env": {
+    "NODE_ENV": "development",
+    "DATABASE_URL": "postgres://localhost/mydb"
+  }
+  ```
+
+  These variables apply only to the editor process. They have no effect on URL opening.
+
+  If omitted, the editor inherits the environment unchanged.
+</ParamField>
+
+<ParamField path="note" type="string" default='""'>
+  A free-text context note saved automatically by `progflow off`. When you stop a flow and choose to save a note, Progflow writes your input into this field.
+
+  Read the saved note at any time with:
+
+  ```bash
+  progflow note backend
+  ```
+
+  You can also edit the `note` field directly in the JSON file.
+</ParamField>
+
+## Field summary
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | Yes | — | Flow name; must match filename |
+| `directory` | string | No | `.` | Working directory path |
+| `editorCmd` | string | No | — | Editor shell command |
+| `urlList` | string[] | No | — | URLs to open on activation |
+| `shell` | string | No | `/bin/sh` | Shell path (reserved) |
+| `env` | object | No | `{}` | Editor environment variables |
+| `note` | string | No | `""` | Saved context note |
+
+## Lockfile
+
+While a flow is active, Progflow writes a lockfile at `~/.config/flow/<name>.lock`. This file is a JSON object containing the PIDs of processes spawned during `progflow on`:
+
+```json
+{"pids": [12345, 12346]}
+```
+
+When you run `progflow off`, Progflow reads this lockfile, sends `SIGTERM` to each listed PID, then deletes the `.lock` file. If no lockfile exists, Progflow reports that no active flow was found.
+
+<Warning>
+  Do not edit or delete lockfiles manually while a flow is running — doing so will prevent `progflow off` from terminating the spawned processes correctly.
+</Warning>

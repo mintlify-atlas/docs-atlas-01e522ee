@@ -1,0 +1,118 @@
+---
+title: "Building from source"
+description: "How to compile Progflow yourself using Cargo."
+---
+
+## Prerequisites
+
+You need the following tools installed before building Progflow:
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Rust toolchain | 1.70 or newer | Compiler and Cargo |
+| `git` | Any recent version | Cloning the repository |
+| `build-essential` | — | C linker (`gcc`, `make`) required by some crates |
+
+<Tip>
+  Install Rust via [rustup](https://rustup.rs) — it manages toolchain versions and makes upgrades straightforward.
+</Tip>
+
+## Clone and build
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/Rehanasharmin/Progflow.git
+    cd Progflow
+    ```
+  </Step>
+  <Step title="Compile a release binary">
+    ```bash
+    cargo build --release
+    ```
+
+    The compiled binary is written to `target/release/progflow`.
+  </Step>
+  <Step title="Install the binary">
+    Copy the binary to a directory on your `$PATH`:
+
+    <CodeGroup>
+
+    ```bash User install
+    cp target/release/progflow ~/.local/bin/
+    ```
+
+    ```bash System-wide install
+    sudo cp target/release/progflow /usr/local/bin/
+    ```
+
+    </CodeGroup>
+
+    Verify the install:
+
+    ```bash
+    progflow --version
+    ```
+  </Step>
+</Steps>
+
+## Release profile
+
+The `[profile.release]` section in `Cargo.toml` applies aggressive size and performance optimizations:
+
+```toml
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+```
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `opt-level` | `"z"` | Optimize for binary size rather than speed |
+| `lto` | `true` | Link-time optimization across all crates |
+| `codegen-units` | `1` | Single codegen unit for maximum optimization |
+| `strip` | `true` | Strip debug symbols from the final binary |
+
+These settings produce a small, self-contained binary with no runtime dependencies.
+
+## Dependencies
+
+Progflow's direct dependencies are declared in `Cargo.toml`:
+
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `clap` | 4 | Argument parsing (derive feature) |
+| `serde` + `serde_json` | 1 | Config serialization and deserialization |
+| `dirs` | 5 | Cross-platform config directory lookup |
+| `libc` | 0.2 | Sending `SIGTERM` to tracked processes |
+| `once_cell` | 1 | Lazy static for Termux detection |
+| `chrono` | 0.4 | Date/time (available, reserved for future use) |
+
+## Project structure
+
+```
+src/
+├── main.rs          # CLI entry point — clap parser and command dispatch
+├── config.rs        # FlowConfig struct, lockfile I/O
+├── error.rs         # AppError enum (User, Io, Json)
+├── platform.rs      # is_termux() detection, URL opener
+└── commands/
+    ├── on.rs        # progflow on
+    ├── off.rs       # progflow off
+    ├── list.rs      # progflow list
+    ├── edit.rs      # progflow edit
+    ├── new.rs       # progflow new
+    └── note.rs      # progflow note
+```
+
+## Design decisions
+
+**No async runtime.** Progflow uses blocking I/O throughout. There are no concurrent operations that benefit from async, and removing the async runtime keeps the binary smaller and the code simpler.
+
+**Platform detection.** The `is_termux()` function in `src/platform.rs` checks two signals at startup: the `$PREFIX` environment variable (set by Termux to a path beginning with `/data/data/com.termux`) and the presence of the `termux-open-url` binary on `$PATH`. The result is cached with `once_cell` so the check only runs once.
+
+**Lockfiles.** When a flow is activated, Progflow writes a JSON lockfile to `~/.config/flow/<name>.lock` containing the PIDs of all spawned processes. `progflow off` reads this file and sends `SIGTERM` to each PID before deleting the file.
+
+**Exit codes.** The binary exits with `0` on success, `1` for user errors (wrong arguments, flow not found), and `2` for IO or JSON parse errors.

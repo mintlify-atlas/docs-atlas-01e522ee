@@ -1,0 +1,120 @@
+---
+title: "Running on Termux"
+description: "How to install and use Progflow on Android via Termux, including URL opening and editor recommendations."
+---
+
+[Termux](https://termux.dev) is a terminal emulator for Android that provides a full Linux-like environment without requiring root. Because Progflow is a Rust binary that relies only on standard POSIX interfaces, it works on Termux the same way it does on a Linux desktop — with a few Android-specific adaptations for opening URLs.
+
+## How Progflow detects Termux
+
+On startup, Progflow checks two signals to decide whether it is running in a Termux environment:
+
+1. The `$PREFIX` environment variable starts with `/data/data/com.termux`
+2. The `termux-open-url` binary is present in your `PATH`
+
+If either condition is true, Progflow switches to Termux-compatible behavior for all URL operations. Detection is automatic — no configuration is needed.
+
+## Installation
+
+The standard curl installer works on Termux without any changes. It detects the Termux environment and installs the right build dependencies automatically (`pkg install rust build-essential clang`):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Rehanasharmin/Progflow/master/install.sh | bash
+```
+
+The binary is installed to `~/.local/bin`. If that path is not already in your `PATH`, the installer adds it to your shell profile.
+
+## How URL opening works
+
+On Termux, Progflow opens URLs in two steps:
+
+1. **Primary:** runs `termux-open-url <url>`, which hands the URL to the Android intent system and opens it in your default browser
+2. **Fallback:** if `termux-open-url` fails, runs `am start -a android.intent.action.VIEW -d <url>` directly using the Android Activity Manager
+
+If both fail, Progflow prints a warning and continues:
+
+```
+Warning: Failed to open URL: https://example.com
+Hint: Install a browser or open URLs manually
+```
+
+<Note>
+  If URLs are not opening, check that the `termux-api` package is installed:
+
+  ```bash
+  pkg install termux-api
+  ```
+
+  You also need to install the [Termux:API](https://f-droid.org/en/packages/com.termux.api/) companion app from F-Droid. Without it, `termux-open-url` is available but silently fails.
+</Note>
+
+## Editor commands on Termux
+
+Termux runs inside the Android terminal — there is no display server, so GUI editors like VS Code or gedit will not work. Use a terminal editor instead:
+
+| Editor | Install | Command to use in flow |
+|--------|---------|------------------------|
+| Neovim | `pkg install neovim` | `nvim .` |
+| Vim | `pkg install vim` | `vim .` |
+| nano | `pkg install nano` | `nano .` |
+| Emacs | `pkg install emacs` | `emacs .` |
+| micro | `pkg install micro` | `micro .` |
+
+Set your editor command when creating the flow or edit `~/.config/flow/<name>.json` directly.
+
+## Example: setting up a Termux flow
+
+<Steps>
+  <Step title="Create the flow">
+    ```bash
+    progflow new termux-work
+    ```
+
+    At the prompts:
+
+    ```
+    Working directory: ~/projects
+    Editor command:    vim .
+    URLs to open:      https://github.com
+    Shell:             /data/data/com.termux/files/usr/bin/bash
+    Env vars:          (leave empty)
+    ```
+  </Step>
+  <Step title="Resulting config">
+    `~/.config/flow/termux-work.json`:
+
+    ```json
+    {
+      "name": "termux-work",
+      "directory": "/data/data/com.termux/files/home/projects",
+      "editorCmd": "vim .",
+      "urlList": [
+        "https://github.com"
+      ],
+      "shell": "/data/data/com.termux/files/usr/bin/bash",
+      "env": {},
+      "note": ""
+    }
+    ```
+  </Step>
+  <Step title="Activate the flow">
+    ```bash
+    progflow on termux-work
+    ```
+
+    Vim opens in `~/projects` and GitHub opens in your default Android browser.
+  </Step>
+  <Step title="Stop and save context">
+    ```bash
+    progflow off termux-work
+    ```
+
+    You are prompted to save a note, then the lockfile is removed.
+  </Step>
+</Steps>
+
+## Limitations
+
+- **No GUI editor support.** Only terminal editors work because Termux has no display server.
+- **URL fallback requires a browser.** If no browser is installed on the device, URL opening will silently fail.
+- **Single-session terminal.** Progflow spawns the editor as a background process. On Termux, background processes may be killed by Android when the app is backgrounded. Use Termux's wake-lock feature (`termux-wake-lock`) to prevent this if needed.

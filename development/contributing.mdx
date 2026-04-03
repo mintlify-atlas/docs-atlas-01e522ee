@@ -1,0 +1,141 @@
+---
+title: "Contributing"
+description: "How to contribute code, bug fixes, and new commands to Progflow."
+---
+
+## Getting started
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [Rehanasharmin/Progflow](https://github.com/Rehanasharmin/Progflow) on GitHub, then clone your fork:
+
+    ```bash
+    git clone https://github.com/<your-username>/Progflow.git
+    cd Progflow
+    ```
+  </Step>
+  <Step title="Build and verify">
+    ```bash
+    cargo build --release
+    ./target/release/progflow --help
+    ```
+
+    See [Building from source](/development/building) for full prerequisites and install steps.
+  </Step>
+  <Step title="Create a branch">
+    ```bash
+    git checkout -b my-feature
+    ```
+  </Step>
+</Steps>
+
+## Adding a new command
+
+Each command lives in its own file under `src/commands/`. The pattern is consistent across all existing commands.
+
+<Steps>
+  <Step title="Create the command module">
+    Add `src/commands/<name>.rs` with a `pub fn run` function that returns `Result<(), AppError>`:
+
+    ```rust
+    // src/commands/yourcommand.rs
+    use crate::error::AppError;
+
+    pub fn run(name: &str) -> Result<(), AppError> {
+        // implementation
+        Ok(())
+    }
+    ```
+  </Step>
+  <Step title="Export the module">
+    Add a `pub mod` line to `src/commands/mod.rs`:
+
+    ```rust
+    pub mod yourcommand;
+    ```
+  </Step>
+  <Step title="Add a variant to the Commands enum">
+    Open `src/main.rs` and add your variant to the `Commands` enum:
+
+    ```rust
+    #[derive(Subcommand)]
+    enum Commands {
+        // ... existing variants ...
+        #[command(about = "Description of your command")]
+        Yourcommand { name: String },
+    }
+    ```
+  </Step>
+  <Step title="Dispatch in main">
+    Add a match arm in the `match cli.command` block in `main()`:
+
+    ```rust
+    Commands::Yourcommand { name } => yourcommand::run(&name),
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Import your new module at the top of `main.rs` alongside the other command imports:
+
+  ```rust
+  use commands::{edit, list, new, note, off, on, yourcommand};
+  ```
+</Note>
+
+## Error handling
+
+Use the variants of `AppError` (defined in `src/error.rs`) to signal different failure modes:
+
+| Variant | Exit code | When to use |
+|---------|-----------|-------------|
+| `AppError::User(String)` | `1` | Bad arguments, flow not found, or any user-fixable problem |
+| `AppError::Io(String, std::io::Error)` | `2` | File read/write failures — include the file path as the first argument |
+| `AppError::Json(String, serde_json::Error)` | `2` | JSON parse or serialization failures — include the file path as the first argument |
+
+```rust
+// User error — describes what the user did wrong
+return Err(AppError::User(format!("Flow '{}' does not exist", name)));
+
+// IO error — wraps the underlying std::io::Error with context
+fs::read_to_string(&path).map_err(|e| AppError::Io(path.display().to_string(), e))?;
+
+// JSON error — wraps serde_json::Error with context
+serde_json::from_str(&content).map_err(|e| AppError::Json(path.display().to_string(), e))?;
+```
+
+Error messages are printed to stderr by `main()` automatically — your command only needs to return the error.
+
+## Code style and checks
+
+Run these commands before committing:
+
+```bash
+cargo fmt          # Format code
+cargo clippy       # Lint for common mistakes
+cargo test         # Run unit tests
+```
+
+<Tip>
+  `cargo clippy` treats warnings as guidance, not hard failures, but address any new warnings introduced by your change before opening a pull request.
+</Tip>
+
+## Submitting a pull request
+
+<Steps>
+  <Step title="Push your branch">
+    ```bash
+    git push origin my-feature
+    ```
+  </Step>
+  <Step title="Open a pull request">
+    Open a pull request against the `master` branch of [Rehanasharmin/Progflow](https://github.com/Rehanasharmin/Progflow).
+  </Step>
+  <Step title="Describe your change">
+    In the pull request description, explain:
+
+    - **What** the change does
+    - **Why** it is needed or useful
+    - Any edge cases or platform-specific behaviour to be aware of
+  </Step>
+</Steps>

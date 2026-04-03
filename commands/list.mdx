@@ -1,0 +1,69 @@
+---
+title: "progflow list"
+description: "Print the names of all configured flows, sorted alphabetically."
+---
+
+## Synopsis
+
+```bash
+progflow list
+```
+
+## What it does
+
+`progflow list` scans `~/.config/flow/` for `.json` files and prints each flow name, one per line, sorted alphabetically.
+
+It does not require any arguments.
+
+## Output
+
+When flows are configured:
+
+```bash
+progflow list
+```
+
+```
+api-backend
+docs-site
+myproject
+staging-env
+```
+
+When no flows have been created yet:
+
+```bash
+progflow list
+```
+
+```
+no flows configured
+```
+
+<Note>
+  `progflow list` only shows flows with a `.json` config file in `~/.config/flow/`. Orphaned lockfiles (`.lock`) without a corresponding config are not listed.
+</Note>
+
+## Config directory
+
+All flow configs are stored in `~/.config/flow/`. Each flow corresponds to a file named `<name>.json`:
+
+```
+~/.config/flow/
+├── api-backend.json
+├── docs-site.json
+└── myproject.json
+```
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success (including the "no flows configured" case) |
+| `2` | IO error reading the config directory |
+
+## See also
+
+- [`progflow new`](/commands/new) — create a new flow
+- [`progflow on`](/commands/on) — activate a flow by name
+- [`progflow edit`](/commands/edit) — edit a flow's config

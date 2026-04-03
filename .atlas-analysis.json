@@ -1,0 +1,80 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Progflow",
+  "projectDescription": "A context-aware workspace manager for Linux and Termux that lets you define named flows to automatically launch editors, open URLs, and save session context notes.",
+  "theme": "aspen",
+  "primaryColor": "#242b2c",
+  "lightColor": "#6a6a6d",
+  "darkColor": "#ebeaea",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "commands/on",
+              "commands/off",
+              "commands/new",
+              "commands/list",
+              "commands/edit",
+              "commands/note"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/flow-config",
+              "configuration/environment"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/use-cases",
+              "guides/termux",
+              "guides/troubleshooting"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/building",
+              "development/contributing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Named workspace flows with editor, URLs, and environment setup",
+    "One-command flow activation: launches editor and opens all URLs simultaneously",
+    "Context note saving on flow deactivation to resume work later",
+    "PID-based process tracking via lockfiles for clean teardown",
+    "Cross-platform support: Linux (xdg-open) and Android Termux (termux-open-url)",
+    "Interactive and non-interactive flow creation modes",
+    "JSON-based flow config stored in ~/.config/flow/",
+    "Custom shell and environment variable support per flow"
+  ],
+  "publicApiSurface": [
+    "progflow new <name>",
+    "progflow on <name>",
+    "progflow off [name]",
+    "progflow list",
+    "progflow edit <name>",
+    "progflow note <name>",
+    "FlowConfig { name, directory, editorCmd, urlList, shell, env, note }",
+    "~/.config/flow/<name>.json",
+    "~/.config/flow/<name>.lock"
+  ]
+}

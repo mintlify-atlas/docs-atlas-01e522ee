@@ -1,0 +1,253 @@
+---
+title: "Use cases"
+description: "Practical examples of setting up and using Progflow flows for real-world workflows."
+---
+
+These examples cover common workflows you can model with Progflow. Each shows the full setup — the prompts, the resulting config, and how to activate the flow — along with tips specific to that use case.
+
+<AccordionGroup>
+  <Accordion title="Development environment">
+    A backend project flow that opens your editor, launches local service URLs, and injects environment variables — all with one command.
+
+    <Steps>
+      <Step title="Create the flow">
+        ```bash
+        progflow new backend
+        ```
+
+        At the prompts:
+
+        ```
+        Working directory: /home/you/projects/api
+        Editor command:    code .
+        URLs to open:      http://localhost:3000, http://localhost:5432/ui
+        Shell:             /bin/bash
+        Env vars:          NODE_ENV=development, DATABASE_URL=postgres://localhost/mydb
+        ```
+      </Step>
+      <Step title="Resulting config">
+        `~/.config/flow/backend.json`:
+
+        ```json
+        {
+          "name": "backend",
+          "directory": "/home/you/projects/api",
+          "editorCmd": "code .",
+          "urlList": [
+            "http://localhost:3000",
+            "http://localhost:5432/ui"
+          ],
+          "shell": "/bin/bash",
+          "env": {
+            "NODE_ENV": "development",
+            "DATABASE_URL": "postgres://localhost/mydb"
+          },
+          "note": ""
+        }
+        ```
+      </Step>
+      <Step title="Activate the flow">
+        ```bash
+        progflow on backend
+        ```
+
+        VS Code opens in `/home/you/projects/api`, your browser opens both URLs, and the editor process inherits `NODE_ENV` and `DATABASE_URL`.
+      </Step>
+    </Steps>
+
+    <Tip>
+      The env vars are only passed to the editor process — they don't affect your current shell session. If you need them in your terminal too, set them in your shell profile or use `direnv`.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Multi-service monitoring">
+    Open a set of dashboards without launching any editor — useful for ops or on-call workflows where you just need visibility into running services.
+
+    <Steps>
+      <Step title="Create the flow">
+        ```bash
+        progflow new monitoring
+        ```
+
+        At the prompts:
+
+        ```
+        Working directory: /home/you
+        Editor command:    (leave empty — press Enter)
+        URLs to open:      http://grafana.local, http://prometheus.local, http://alertmanager.local
+        Shell:             /bin/bash
+        Env vars:          (leave empty)
+        ```
+      </Step>
+      <Step title="Resulting config">
+        `~/.config/flow/monitoring.json`:
+
+        ```json
+        {
+          "name": "monitoring",
+          "directory": "/home/you",
+          "editorCmd": null,
+          "urlList": [
+            "http://grafana.local",
+            "http://prometheus.local",
+            "http://alertmanager.local"
+          ],
+          "shell": "/bin/bash",
+          "env": {},
+          "note": ""
+        }
+        ```
+      </Step>
+      <Step title="Activate the flow">
+        ```bash
+        progflow on monitoring
+        ```
+
+        All three dashboards open in your browser. Because there's no editor command, Progflow starts with no tracked processes — `progflow off monitoring` will still clean up the lockfile.
+      </Step>
+    </Steps>
+
+    <Tip>
+      Save a context note when you go off-call. Next time you pick up the flow, `progflow note monitoring` shows what you were investigating when you stopped.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Documentation workflow">
+    Combine a writing editor with browser tabs pointing at the reference docs you need — so everything is open and in context the moment you start.
+
+    <Steps>
+      <Step title="Create the flow">
+        ```bash
+        progflow new docs
+        ```
+
+        At the prompts:
+
+        ```
+        Working directory: ~/writing/docs
+        Editor command:    nvim .
+        URLs to open:      https://doc.rust-lang.org/book, https://docs.rs, https://github.com/Rehanasharmin/Progflow
+        Shell:             /bin/bash
+        Env vars:          (leave empty)
+        ```
+      </Step>
+      <Step title="Resulting config">
+        `~/.config/flow/docs.json`:
+
+        ```json
+        {
+          "name": "docs",
+          "directory": "/home/you/writing/docs",
+          "editorCmd": "nvim .",
+          "urlList": [
+            "https://doc.rust-lang.org/book",
+            "https://docs.rs",
+            "https://github.com/Rehanasharmin/Progflow"
+          ],
+          "shell": "/bin/bash",
+          "env": {},
+          "note": ""
+        }
+        ```
+      </Step>
+      <Step title="Activate the flow">
+        ```bash
+        progflow on docs
+        ```
+
+        Neovim opens in your docs directory and all three reference tabs load in the browser.
+      </Step>
+    </Steps>
+
+    <Tip>
+      Use the note feature to track where you stopped writing. When you run `progflow off docs`, save a note like "Finished API reference, next: troubleshooting guide" so you can jump back in without re-reading everything.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Context tracking across sessions">
+    The note feature lets you save a snapshot of your mental state when you stop a flow, so picking up where you left off takes seconds instead of minutes.
+
+    <Steps>
+      <Step title="Stop the flow and save context">
+        When you finish a session, stop your flow:
+
+        ```bash
+        progflow off backend
+        ```
+
+        Progflow prompts you to save a note:
+
+        ```
+        Save a context note? [y/N]: y
+        Enter note: Debugging JWT expiry bug in auth middleware — look at src/auth/jwt.rs line 142
+        ✓ flow 'backend' stopped
+        ```
+
+        The note is stored inside `~/.config/flow/backend.json` as the `"note"` field.
+      </Step>
+      <Step title="Read the note next time">
+        Before or after starting the flow again:
+
+        ```bash
+        progflow note backend
+        ```
+
+        Output:
+
+        ```
+        Debugging JWT expiry bug in auth middleware — look at src/auth/jwt.rs line 142
+        ```
+      </Step>
+      <Step title="Overwrite the note on the next stop">
+        Each time you run `progflow off` and save a note, it replaces the previous one. Only the most recent note is kept.
+      </Step>
+    </Steps>
+
+    <Tip>
+      Write notes as next actions rather than summaries. "Fixed login bug" is less useful than "Login bug fixed — write regression test in tests/auth_test.rs". A note should tell future-you exactly what to do first.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Switching between multiple projects">
+    Keep a separate flow per project and switch between them instantly. Because each flow has its own directory, editor command, URLs, and env vars, switching contexts is a single command.
+
+    <Steps>
+      <Step title="Create a flow per project">
+        ```bash
+        progflow new api
+        progflow new frontend
+        progflow new infra
+        ```
+
+        Configure each with its own directory, editor, and URLs at the prompts.
+      </Step>
+      <Step title="List your flows">
+        ```bash
+        progflow list
+        ```
+
+        Output:
+
+        ```
+        api
+        frontend
+        infra
+        ```
+      </Step>
+      <Step title="Switch from one project to another">
+        Stop the current flow (saving context), then start the next one:
+
+        ```bash
+        progflow off api
+        # Save a context note? [y/N]: y
+        # Enter note: Reviewing PR #88 — needs a second pass on error handling
+        progflow on frontend
+        ```
+      </Step>
+    </Steps>
+
+    <Tip>
+      You can run `progflow off` without a name if only one lockfile exists. If you have multiple active flows, specify the name explicitly: `progflow off api`.
+    </Tip>
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,116 @@
+---
+title: "Environment variables"
+description: "Shell environment variables that affect Progflow's behavior and per-flow environment configuration."
+---
+
+Progflow reads a small set of environment variables from your shell session to determine which editor to use and which platform it's running on. You can also define per-flow environment variables directly in a flow's config file.
+
+## Shell environment variables
+
+These variables are read from your current shell session at runtime.
+
+<ParamField path="EDITOR" type="string">
+  The editor command to invoke when you run `progflow edit <name>`. Progflow passes the config file path as an argument, so any editor that accepts a file path works here.
+
+  ```bash
+  export EDITOR=nvim
+  progflow edit myflow   # opens ~/.config/flow/myflow.json in nvim
+  ```
+
+  If `$EDITOR` is not set, Progflow falls back to `$VISUAL`. If neither is set, `progflow edit` exits with an error.
+</ParamField>
+
+<ParamField path="VISUAL" type="string">
+  Fallback editor used by `progflow edit` when `$EDITOR` is not set. Behaves identically to `$EDITOR`.
+
+  ```bash
+  export VISUAL=code
+  progflow edit myflow   # opens ~/.config/flow/myflow.json in VS Code
+  ```
+</ParamField>
+
+<ParamField path="PREFIX" type="string">
+  Used internally to detect whether Progflow is running inside Termux on Android. If `$PREFIX` starts with `/data/data/com.termux`, Progflow treats the environment as Termux and uses `termux-open-url` (with an `am start` fallback) instead of `xdg-open` for URLs.
+
+  You do not need to set this variable manually — Termux sets it automatically. Progflow also falls back to checking for the `termux-open-url` binary in `$PATH` if `$PREFIX` is absent.
+
+  <Note>
+    This variable affects URL opening only. All other Progflow behavior is identical on Termux and Linux.
+  </Note>
+</ParamField>
+
+## Variable summary
+
+| Variable | Used by | Purpose |
+|----------|---------|---------|
+| `$EDITOR` | `progflow edit` | Opens the flow config file for editing |
+| `$VISUAL` | `progflow edit` | Fallback editor when `$EDITOR` is unset |
+| `$PREFIX` | URL opener | Detects Termux environment |
+
+## Per-flow environment variables
+
+In addition to the shell-level variables above, each flow config can define its own `env` object. These variables are injected into the editor process when you run `progflow on`.
+
+```json
+{
+  "name": "backend",
+  "editorCmd": "nvim .",
+  "env": {
+    "NODE_ENV": "development",
+    "DATABASE_URL": "postgres://localhost/mydb",
+    "PORT": "3000"
+  }
+}
+```
+
+### How per-flow env vars work
+
+- Variables are passed to the editor subprocess via `cmd.env(key, value)`.
+- They **supplement** the existing environment — they do not replace it. The editor process inherits all variables from your shell session plus the ones defined in `env`.
+- If a key in `env` already exists in your shell session, the value from `env` takes precedence for that subprocess.
+- These variables are scoped to the editor process only. They have **no effect** on URL opening — `xdg-open` and `termux-open-url` run as separate processes with the unmodified environment.
+
+<Tip>
+  Per-flow env vars are a good place to set project-specific secrets (like `DATABASE_URL`) without polluting your global shell environment. Just be aware that the values are stored in plaintext in `~/.config/flow/<name>.json`.
+</Tip>
+
+## Practical examples
+
+### Set a default editor globally
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+export EDITOR=nvim
+
+# Then edit any flow config
+progflow edit backend
+```
+
+### Override an env var just for one flow
+
+Set `NODE_ENV=production` for a staging flow without changing your shell:
+
+```json
+{
+  "name": "staging",
+  "editorCmd": "code .",
+  "env": {
+    "NODE_ENV": "production",
+    "API_BASE_URL": "https://staging.example.com"
+  }
+}
+```
+
+When you run `progflow on staging`, VS Code launches with `NODE_ENV` set to `production` — your shell session is unaffected.
+
+### Debug which editor will be used
+
+```bash
+echo "EDITOR=$EDITOR  VISUAL=$VISUAL"
+```
+
+If both are empty, set one before running `progflow edit`:
+
+```bash
+EDITOR=nano progflow edit myflow
+```

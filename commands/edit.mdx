@@ -1,0 +1,89 @@
+---
+title: "progflow edit"
+description: "Open a flow's config file directly in your $EDITOR or $VISUAL."
+---
+
+## Synopsis
+
+```bash
+progflow edit <name>
+```
+
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `name` | Yes | The name of the flow to edit |
+
+## What it does
+
+`progflow edit` opens `~/.config/flow/<name>.json` in your preferred editor. It resolves the editor binary by checking environment variables in this order:
+
+1. `$EDITOR`
+2. `$VISUAL` (fallback if `$EDITOR` is not set)
+
+The editor runs in the foreground. Progflow waits for it to exit before returning. If the editor exits with a non-zero status code, Progflow treats this as an error.
+
+<Tip>
+  Set `$EDITOR` in your shell profile so it is always available:
+
+  ```bash
+  export EDITOR=nvim
+  ```
+</Tip>
+
+## Example
+
+```bash
+export EDITOR=nvim
+progflow edit myproject
+```
+
+This opens `~/.config/flow/myproject.json` in Neovim. Save and quit as normal — Progflow returns once the editor closes.
+
+## Config file structure
+
+The JSON file you edit directly maps to the `FlowConfig` struct. All fields use camelCase keys:
+
+```json
+{
+  "name": "myproject",
+  "directory": "/home/user/projects/myproject",
+  "editorCmd": "nvim .",
+  "urlList": [
+    "http://localhost:3000"
+  ],
+  "shell": "/bin/sh",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "note": ""
+}
+```
+
+<Warning>
+  `progflow edit` does not validate the JSON after you save. If you introduce a syntax error, subsequent `progflow on` or `progflow off` calls for that flow will fail with a parse error (exit code `2`). Use a linting editor plugin or run `cat ~/.config/flow/<name>.json | python3 -m json.tool` to verify the file is valid.
+</Warning>
+
+## Error cases
+
+| Condition | Exit code | Message |
+|-----------|-----------|---------|
+| Flow `<name>` does not exist | `1` | `Config file does not exist: <path>` |
+| Neither `$EDITOR` nor `$VISUAL` is set | `1` | `No editor set. Set $EDITOR or $VISUAL` |
+| Editor exits with a non-zero status | `1` | `Editor exited with non-zero: <code>` |
+| Config file cannot be read | `2` | IO error |
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Editor exited successfully |
+| `1` | User error — flow not found, no editor set, editor error |
+| `2` | IO error |
+
+## See also
+
+- [`progflow new`](/commands/new) — create a new flow
+- [`progflow on`](/commands/on) — activate a flow
+- [Flow config reference](/configuration/flow-config) — full description of all config fields

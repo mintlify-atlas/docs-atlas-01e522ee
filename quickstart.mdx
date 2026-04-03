@@ -1,80 +1,142 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Create your first flow and start working in minutes."
 ---
 
-## Get started in three steps
+This guide walks you through creating a flow for a development project, activating it, stopping it with a saved note, and reading that note back.
 
-Get your documentation site running locally and make your first customization.
+## Create your first flow
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Scaffold a new flow">
+    Run `progflow new` with a name for the flow. The name is how you'll refer to this workspace configuration in all other commands.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash
+    progflow new dev
+    ```
 
-### Step 2: Deploy your changes
+    The command launches an interactive prompt. Fill in the details for your project:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```
+    Working directory: /home/you/projects/myapp
+    Editor command: nvim .
+    URLs to open (comma-separated): https://github.com/user/myapp, https://docs.rs
+    Shell: /bin/bash
+    Env vars (KEY=VALUE, comma-separated, or leave blank): NODE_ENV=development
+    ```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    <Tip>
+      Leave the editor command blank if you don't want progflow to open an editor. Leave the URLs field blank to skip URL launching. All fields except the working directory are optional.
+    </Tip>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Activate the flow">
+    Start the flow with `progflow on`:
 
-### Step 3: Go live
+    ```bash
+    progflow on dev
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    You should see output like this:
+
+    ```
+    ✓ flow 'dev' started — editor, 2 urls
+    ```
+
+    Progflow has:
+    - Spawned `nvim .` as a background process with its working directory set to `/home/you/projects/myapp`
+    - Opened both URLs with `xdg-open` (or `termux-open-url` on Android)
+    - Written a lockfile at `~/.config/flow/dev.lock` to track the spawned PIDs
+  </Step>
+
+  <Step title="List your flows">
+    To see all configured flows at any time, run:
+
+    ```bash
+    progflow list
+    ```
+
+    Example output:
+
+    ```
+    dev
+    ```
+
+    Each flow name appears on its own line, sorted alphabetically. If you have multiple flows, they all appear here.
+  </Step>
+
+  <Step title="Stop the flow and save a note">
+    When you're done working, stop the flow with `progflow off`:
+
+    ```bash
+    progflow off dev
+    ```
+
+    Progflow sends `SIGTERM` to any processes it spawned, then prompts you to save a context note:
+
+    ```
+    Save a context note? [y/N]: y
+    Enter note: Debugging auth issue in JWT middleware — see src/auth.rs:42
+    ```
+
+    The note is saved directly into the flow's config file. It persists until you overwrite it the next time you stop the flow.
+
+    <Note>
+      Press **Enter** without typing `y` to skip saving a note. The flow stops either way.
+    </Note>
+  </Step>
+
+  <Step title="Read the saved note">
+    When you come back to the project later, retrieve the note to pick up where you left off:
+
+    ```bash
+    progflow note dev
+    ```
+
+    Output:
+
+    ```
+    Debugging auth issue in JWT middleware — see src/auth.rs:42
+    ```
+  </Step>
+</Steps>
+
+## The resulting config file
+
+After running `progflow new dev` and saving a note, the config file at `~/.config/flow/dev.json` looks like this:
+
+```json
+{
+  "name": "dev",
+  "directory": "/home/you/projects/myapp",
+  "editorCmd": "nvim .",
+  "urlList": [
+    "https://github.com/user/myapp",
+    "https://docs.rs"
+  ],
+  "shell": "/bin/bash",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "note": "Debugging auth issue in JWT middleware — see src/auth.rs:42"
+}
+```
+
+You can edit this file directly or use `progflow edit dev` to open it in your `$EDITOR`.
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Command reference" icon="terminal" href="/commands/on">
+    See all available commands and their options.
+  </Card>
+  <Card title="Flow configuration" icon="gear" href="/configuration/flow-config">
+    Learn about all config fields and how to use environment variables.
+  </Card>
+  <Card title="Use cases" icon="lightbulb" href="/guides/use-cases">
+    See examples for multi-service setups, documentation workflows, and more.
+  </Card>
+  <Card title="Termux guide" icon="mobile" href="/guides/termux">
+    Tips for running Progflow on Android with Termux.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

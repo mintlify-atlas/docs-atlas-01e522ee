@@ -1,0 +1,109 @@
+---
+title: "progflow on"
+description: "Activate a named flow — launches your editor, opens URLs, and writes a lockfile."
+---
+
+## Synopsis
+
+```bash
+progflow on <name>
+```
+
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `name` | Yes | The name of the flow to activate |
+
+## What it does
+
+<Steps>
+  <Step title="Load and validate the flow config">
+    Reads `~/.config/flow/<name>.json`. If the flow does not exist, the command exits with code `1`.
+
+    If a `directory` is set in the config, Progflow verifies that the path exists on disk before continuing.
+  </Step>
+  <Step title="Spawn the editor">
+    If `editorCmd` is configured, Progflow spawns it as a background process using:
+
+    ```bash
+    sh -c <editorCmd>
+    ```
+
+    The process starts in the flow's `directory` with any configured environment variables applied. The PID is tracked for later cleanup.
+  </Step>
+  <Step title="Open URLs">
+    Each URL in `urlList` is opened using the platform's default URL opener:
+
+    - **Linux**: `xdg-open` (falls back to `gio open`, `firefox`, `chromium`, or `brave`)
+    - **Termux**: `termux-open-url` (falls back to Android `am start`)
+  </Step>
+  <Step title="Write lockfile">
+    A lockfile is saved to `~/.config/flow/<name>.lock` containing the PIDs of any spawned background processes. `progflow off` uses this file to send `SIGTERM` when you stop the flow.
+  </Step>
+</Steps>
+
+## Example
+
+```bash
+progflow on myproject
+```
+
+```
+✓ flow 'myproject' started — editor, 2 urls
+```
+
+The summary line reflects what was actually started. Other possible outputs:
+
+```
+✓ flow 'myproject' started — editor
+✓ flow 'myproject' started — 1 url
+✓ flow 'myproject' started — started (no processes)
+```
+
+## Partial activation
+
+`progflow on` is non-fatal when individual components are missing:
+
+- **No `editorCmd` set** — only URLs are opened; no editor is spawned
+- **No `urlList` set** — only the editor is spawned; no URLs are opened
+- **Both absent** — the lockfile is still written; the summary reads `started (no processes)`
+
+<Note>
+  If the editor fails to spawn (for example, the binary is not on `$PATH`), Progflow prints a warning and continues opening URLs rather than aborting.
+</Note>
+
+## Environment variables
+
+Any key/value pairs in the flow's `env` map are injected into the editor process's environment. They are not exported to your current shell session.
+
+```json
+{
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "3000"
+  }
+}
+```
+
+## Error cases
+
+| Condition | Exit code | Message |
+|-----------|-----------|---------|
+| Flow `<name>` does not exist | `2` | `IO error: ~/.config/flow/<name>.json: No such file or directory` |
+| Configured `directory` does not exist | `1` | `Directory does not exist: <path>` |
+| Config file cannot be parsed | `2` | `JSON error in ~/.config/flow/<name>.json: ...` |
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Flow started successfully |
+| `1` | User error — wrong name, missing directory |
+| `2` | IO or JSON parse error |
+
+## See also
+
+- [`progflow off`](/commands/off) — stop a running flow
+- [`progflow new`](/commands/new) — create a new flow config
+- [`progflow edit`](/commands/edit) — edit an existing flow config

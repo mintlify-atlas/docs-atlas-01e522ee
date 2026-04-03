@@ -1,0 +1,53 @@
+---
+title: "Introduction"
+description: "A context-aware workspace manager for Linux and Termux"
+---
+
+## What is Progflow?
+
+Progflow lets you define named "flows" — workspace configurations that automatically launch your editor, open URLs, and set up your environment with a single command. When you stop a flow, it prompts you to save a context note so you never lose track of what you were doing.
+
+Think of each flow as a saved workspace snapshot: the directory you work in, the editor command to run, the URLs to open in your browser, the shell to use, and any environment variables your project needs.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install Progflow on Linux or Termux in seconds
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Create your first flow and start working in minutes
+  </Card>
+  <Card title="Command Reference" icon="terminal" href="/commands/on">
+    Explore all available commands and flags
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/flow-config">
+    Understand the flow config format and options
+  </Card>
+</CardGroup>
+
+## How it works
+
+Each flow is stored as a JSON file in `~/.config/flow/`. When you activate a flow with `progflow on`, it:
+
+1. Navigates to the configured working directory
+2. Spawns your editor command as a background process
+3. Opens all configured URLs with `xdg-open` (or `termux-open-url` on Android)
+4. Writes a lockfile tracking the spawned process PIDs
+
+When you deactivate with `progflow off`, it sends `SIGTERM` to tracked processes and optionally saves a context note into the flow's config file.
+
+## Key features
+
+- **Named flows** — define as many workspace configurations as you need
+- **One-command activation** — editor, browser tabs, and env vars all launch together
+- **Context notes** — save a note when stopping so you remember where you left off
+- **Cross-platform** — works on Linux desktops and Android via Termux
+- **Zero dependencies at runtime** — a single static binary with no external runtime
+
+## Supported platforms
+
+| Platform | URL opener | Status |
+|----------|-----------|--------|
+| Linux (X11/Wayland) | `xdg-open` | Fully supported |
+| Android (Termux) | `termux-open-url` | Fully supported |
+| macOS | — | Not supported |
+| Windows | — | Not supported |

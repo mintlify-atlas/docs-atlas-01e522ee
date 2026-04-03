@@ -1,0 +1,102 @@
+---
+title: "progflow off"
+description: "Deactivate a running flow — terminates tracked processes, saves an optional context note, and removes the lockfile."
+---
+
+## Synopsis
+
+```bash
+progflow off [name]
+```
+
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `name` | No | The name of the flow to stop. If omitted, Progflow uses the most recently modified lockfile. |
+
+## What it does
+
+<Steps>
+  <Step title="Resolve the flow name">
+    If you provide a `name`, Progflow looks for `~/.config/flow/<name>.lock`.
+
+    If you omit `name`, Progflow scans `~/.config/flow/` for `.lock` files and picks the one with the most recent modification time. If no lockfile is found, the command exits with code `1`.
+  </Step>
+  <Step title="Send SIGTERM to tracked processes">
+    Progflow reads the PID list from the lockfile and sends `SIGTERM` to each process. If a process is no longer running, the signal is silently ignored. Any other failure prints a warning but does not abort the command.
+  </Step>
+  <Step title="Prompt for a context note (interactive mode only)">
+    When stdin is a terminal, Progflow asks:
+
+    ```
+    Save a context note? [y/N]:
+    ```
+
+    If you answer `y`, it follows up with:
+
+    ```
+    Enter note:
+    ```
+
+    The note is saved to the `note` field in `~/.config/flow/<name>.json`. You can read it back later with [`progflow note`](/commands/note).
+
+    If stdin is not a terminal (for example, when running in a script or CI), this prompt is skipped entirely.
+  </Step>
+  <Step title="Delete the lockfile">
+    `~/.config/flow/<name>.lock` is removed. The flow is now considered inactive.
+  </Step>
+</Steps>
+
+## Example
+
+```bash
+progflow off myproject
+```
+
+```
+Save a context note? [y/N]: y
+Enter note: Refactoring auth middleware, tests pass but need cleanup
+✓ flow 'myproject' stopped
+```
+
+Stopping the most recently active flow without specifying a name:
+
+```bash
+progflow off
+```
+
+## Non-interactive mode
+
+When stdin is piped or redirected, the note prompt is skipped automatically:
+
+```bash
+echo "" | progflow off myproject
+# or in a script
+progflow off myproject < /dev/null
+```
+
+<Note>
+  The note prompt only appears in interactive terminal sessions. Scripts and automated pipelines are never blocked waiting for input.
+</Note>
+
+## Error cases
+
+| Condition | Exit code | Message |
+|-----------|-----------|---------|
+| No `name` given and no active flow found | `1` | `No active flow found` |
+| Named flow has no lockfile | `1` | `No lock file found for flow '<name>'` |
+| Config or lockfile cannot be read/parsed | `2` | IO or JSON error |
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Flow stopped successfully |
+| `1` | User error — no active flow, lockfile not found |
+| `2` | IO or JSON parse error |
+
+## See also
+
+- [`progflow on`](/commands/on) — start a flow
+- [`progflow note`](/commands/note) — read the saved context note for a flow
